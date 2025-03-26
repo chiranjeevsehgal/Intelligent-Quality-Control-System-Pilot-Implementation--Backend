@@ -54,6 +54,24 @@ app.post("/webhook", (req, res) => {
     res.status(200).json({ message: "Webhook received successfully!" });
 });
 
+app.get('/get-image', async (req, res) => {
+    try {
+      const { fileId } = req.query;
+      const response = await axios.get(`https://drive.google.com/uc?export=view&id=${fileId}`, {
+        responseType: 'arraybuffer'
+      });
+      
+      const base64 = Buffer.from(response.data, 'binary').toString('base64');
+      res.json({ 
+        mimeType: response.headers['content-type'],
+        data: `data:${response.headers['content-type']};base64,${base64}`
+      });
+    } catch (error) {
+      console.error('Error fetching image:', error);
+      res.status(500).json({ error: 'Failed to fetch image' });
+    }
+  });
+
 // Routes
 app.get('/', (req, res) => res.send('API is running...'));
 
