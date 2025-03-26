@@ -4,6 +4,9 @@ const bodyParser = require("body-parser");
 const http = require("http");
 const WebSocket = require("ws");
 
+const axios = require('axios');
+const stream = require('stream');
+
 const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
@@ -57,18 +60,54 @@ app.post("/webhook", (req, res) => {
 app.get('/get-image', async (req, res) => {
     try {
       const { fileId } = req.query;
-      const response = await axios.get(`https://drive.google.com/uc?export=view&id=${fileId}`, {
-        responseType: 'arraybuffer'
-      });
       
-      const base64 = Buffer.from(response.data, 'binary').toString('base64');
-      res.json({ 
-        mimeType: response.headers['content-type'],
-        data: `data:${response.headers['content-type']};base64,${base64}`
+      // First try direct download
+      const directUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
+      
+      const response = await axios({
+        method: 'get',
+        url: directUrl,
+        responseType: 'stream',
+        maxRedirects: 5 // Important for Google Drive
       });
+  
+      // Collect chunks and convert to base64
+      const chunks = [];
+      response.data.on('data', (chunk) => chunks.push(chunk));
+      response.data.on('end', () => {
+        const buffer = Buffer.concat(chunks);
+        const base64 = buffer.toString('base64');
+        const contentType = response.headers['content-type'] || 'image/jpeg';
+        
+        res.json({
+          mimeType: contentType,
+          data: `data:${contentType};base64,${base64}`
+        });
+      });
+  
+      response.data.on('error', (err) => {
+        console.error('Stream error:', err);
+        res.status(500).json({ error: 'Failed to process image stream' });
+      });
+  
     } catch (error) {
-      console.error('Error fetching image:', error);
-      res.status(500).json({ error: 'Failed to fetch image' });
+      console.error('Full error:', error);
+      
+      // Special handling for Google Drive's virus scan warning
+      if (error.response && error.response.data) {
+        const html = error.response.data.toString();
+        if (html.includes('Virus scan warning')) {
+          return res.status(400).json({ 
+            error: 'Google Drive virus scan warning',
+            solution: 'Try downloading manually first to acknowledge warning'
+          });
+        }
+      }
+      
+      res.status(500).json({ 
+        error: 'Failed to fetch image',
+        details: error.message 
+      });
     }
   });
 
