@@ -34,7 +34,10 @@ app.post("/webhook", (req, res) => {
     // Send update to all WebSocket clients
     wss.clients.forEach(client => {
         if (client.readyState === WebSocket.OPEN) {
+            console.log("📤 Sending file to WebSocket clients...");
             client.send(JSON.stringify(latestFile));
+        } else {
+            console.warn("⚠️ Client is not open, skipping...");
         }
     });
 
