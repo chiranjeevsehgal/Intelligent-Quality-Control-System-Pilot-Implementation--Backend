@@ -11,7 +11,15 @@ let latestFile = null;
 
 // WebSocket connection
 wss.on("connection", (ws) => {
-    console.log("🔗 New WebSocket client connected!");
+    console.log(`✅ New WebSocket client connected! Total clients: ${wss.clients.size}`);
+
+    ws.on("message", (message) => {
+        console.log("📩 Message from client:", message);
+    });
+    ws.on("close", () => {
+        console.log(`❌ Client disconnected. Remaining clients: ${wss.clients.size}`);
+    });
+    
     if (latestFile) {
         ws.send(JSON.stringify(latestFile));
     }
