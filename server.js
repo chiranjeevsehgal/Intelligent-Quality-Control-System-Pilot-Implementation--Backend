@@ -58,4 +58,11 @@ app.post("/webhook", (req, res) => {
 app.get('/', (req, res) => res.send('API is running...'));
 
 // Export the Express app
+
+const PORT = process.env.PORT || 5000;
+
+server.listen(PORT, () => {
+    console.log(`🚀 Server is running on port ${PORT}`);
+});
+
 module.exports = app;
