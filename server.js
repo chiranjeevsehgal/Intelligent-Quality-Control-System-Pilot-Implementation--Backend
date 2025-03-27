@@ -34,21 +34,22 @@ app.use(cors());
 app.use(bodyParser.json());
 
 app.post("/webhook", (req, res) => {
-    const { fileName, fileUrl, createdTime } = req.body;
-    console.log("🔔 New File Alert Received!");
-    console.log(`📁 File Name: ${fileName}`);
-    console.log(`🔗 File URL: ${fileUrl}`);
-    console.log(`📅 Created Time: ${createdTime}`);
+    const { files } = req.body; // Expect an array of files
+    console.log("🔔 New Files Alert Received!");
 
-    latestFile = { fileName, fileUrl, createdTime };
+    if (!files || !Array.isArray(files) || files.length === 0) {
+        return res.status(400).json({ error: "Invalid request, expected an array of files." });
+    }
 
-    console.log(wss.clients)
-    // Send update to all WebSocket clients
+    latestFile = files; // Store the array of files
+
+    console.log(`📁 Received ${files.length} new files.`);
+
+    // Send updates to all WebSocket clients
     wss.clients.forEach(client => {
-        
         if (client.readyState === WebSocket.OPEN) {
-            console.log("📤 Sending file to WebSocket clients...");
-            client.send(JSON.stringify(latestFile));
+            console.log("📤 Sending file list to WebSocket clients...");
+            client.send(JSON.stringify(files)); // Send entire array
         } else {
             console.warn("⚠️ Client is not open, skipping...");
         }
@@ -56,6 +57,7 @@ app.post("/webhook", (req, res) => {
 
     res.status(200).json({ message: "Webhook received successfully!" });
 });
+
 
 app.get('/get-image', async (req, res) => {
     try {
