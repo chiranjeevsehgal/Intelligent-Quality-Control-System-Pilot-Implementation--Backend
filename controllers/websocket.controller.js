@@ -1,4 +1,5 @@
 let latestFile = null;
+const WebSocket = require("ws");
 
 exports.handleWebSocketConnection = (wss) => {
   return (ws) => {
