@@ -18,7 +18,7 @@ exports.handleWebSocketConnection = (wss) => {
   };
 };
 
-exports.handleWebhook = (req, res) => {
+exports.handleWebhook = (req, res, wss) => {
   const { files } = req.body;
   console.log("🔔 New Files Alert Received!");
 
