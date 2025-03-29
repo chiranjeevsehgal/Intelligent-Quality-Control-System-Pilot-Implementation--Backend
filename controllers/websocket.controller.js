@@ -19,10 +19,15 @@ exports.handleWebSocketConnection = (wss) => {
   };
 };
 
-exports.handleWebhook = (req, res, wss) => {
+exports.handleWebhook = (req, res) => {
+  const wss = req.app.get("wss"); 
   const { files } = req.body;
   console.log("🔔 New Files Alert Received!");
-
+  if (!wss) {
+    console.error("❌ WebSocket Server not found in app");
+    return res.status(500).json({ error: "WebSocket server unavailable." });
+  }
+  
   if (!files || !Array.isArray(files) || files.length === 0) {
     return res.status(400).json({ error: "Invalid request, expected an array of files." });
   }
