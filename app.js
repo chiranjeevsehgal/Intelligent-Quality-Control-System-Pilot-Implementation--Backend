@@ -13,7 +13,7 @@ app.use(bodyParser.urlencoded({ limit: '100mb', extended: true }));  // URL-enco
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
-app.use(express.json({ limit: '100mb' }));  // Apply same limit to express.json()
+app.use(express.json({ limit: '100mb' }));
 
 
 // Routes

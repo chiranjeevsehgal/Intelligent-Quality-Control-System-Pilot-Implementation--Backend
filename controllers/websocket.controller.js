@@ -39,7 +39,7 @@ function handleWebhook(req, res) {
 
   wss.clients.forEach(client => {
     if (client.readyState === WebSocket.OPEN) {
-      console.log("📤 Sending file list to WebSocket clients...");
+      console.log("Sending files detected to WebSocket clients...");
       client.send(JSON.stringify(files));
     } else {
       console.warn("⚠️ Client is not open, skipping...");
@@ -49,7 +49,18 @@ function handleWebhook(req, res) {
   res.status(200).json({ message: "Webhook received successfully!" });
 };
 
+function broadcastToClients(wss, message) {
+  // To broadcast the response to the client
+  wss.clients.forEach(client => {
+    if (client.readyState === WebSocket.OPEN) {
+
+      client.send(JSON.stringify(message));
+    }
+  });
+}
+
 module.exports = {
   handleWebSocketConnection,
   handleWebhook,
+  broadcastToClients
 };
