@@ -1,56 +1,30 @@
-// services/file-watcher.service.js
-const chokidar = require('chokidar');
-const path = require('path');
-const fs = require('fs');
-const config = require('../config');
-const WebSocket = require("ws");
 const axios = require('axios');
 const { broadcastToClients }  = require('../controllers/websocket.controller');
-let watcher;
+const fs = require('fs');
+const path = require('path');
+const app = require('../app');
+const config = require('../config');
+const wss = app.get("wss");
 
-// Using Chokidar to monitor the files
-function initFileWatcher(wss) {
-    
-    // Create watch folder if it doesn't exist
-    if (!fs.existsSync(config.WATCH_FOLDER)) {
-        fs.mkdirSync(config.WATCH_FOLDER, { recursive: true });
-    }
-
-    watcher = chokidar.watch(config.WATCH_FOLDER, {
-        ignored: /(^|[\/\\])\../,
-        persistent: true,
-        awaitWriteFinish: {
-            stabilityThreshold: 2000,
-            pollInterval: 100
-        }
-    });
-
-    watcher
-        .on('add', filePath => handleFileChange(filePath, wss))
-        .on('change', filePath => handleFileChange(filePath, wss))
-        .on('error', error => console.error('Watcher error:', error));
-
-    return watcher;
-}
-
-// Helper function to process the image and broadcast the response
-async function handleFileChange(filePath, wss) {
+async function handleFileChange(filePath) {
     
     try {
-        console.log("From edge folder\n"+filePath);
-        
+
+        broadcastToClients(wss, filePath)
+        // console.log("In airflow controller\n"+filePath);
+        console.log("file path:\n"+filePath);
         
         const response = await axios.post('http://localhost:5001/api/process-image', { filePath });
 
-        broadcastResult(wss, {
+        broadcastResult({
             fileName: path.basename(filePath),
             filePath,
             result: response.data.result,
             timestamp: new Date().toISOString(),
         });
     } catch (error) {
-        console.error(`Error processing ${filePath}`);
-        broadcastError(wss, {
+        console.error(`Error processing ${filePath}:`);
+        broadcastError({
             fileName: path.basename(filePath),
             error: error.response?.data?.error || error.message,
         });
@@ -58,7 +32,7 @@ async function handleFileChange(filePath, wss) {
 }
 
 // Custom response function for the edge pipeline
-function broadcastResult(wss, data) {
+function broadcastResult(data) {
     const filePath = data.filePath
     const fileBuffer = fs.readFileSync(filePath);
 
@@ -77,7 +51,7 @@ function broadcastResult(wss, data) {
 }
 
 // Custom error function for the edge pipeline
-function broadcastError(wss, data) {
+function broadcastError(data) {
     const message = {
         type: 'LOCAL_FILE_ERROR',
         data: {
@@ -89,6 +63,5 @@ function broadcastError(wss, data) {
 }
 
 module.exports = {
-    initFileWatcher,
     handleFileChange
 };

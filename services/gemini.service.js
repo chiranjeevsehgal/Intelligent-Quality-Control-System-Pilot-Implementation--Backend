@@ -71,6 +71,7 @@ async function analyzeImageFromEdgePipelineService(base64Data) {
 
     const endpoint = `https://generativelanguage.googleapis.com/v1/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
     
+    
     const requestBody = {
       contents: [
         {
